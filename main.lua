@@ -970,6 +970,269 @@ function UI:CreateWindow(title, subtitle)
 			end
 
 			------------------------------------------------------------------
+			-- MULTI SELECT
+			-- opts.Name     display label
+			-- opts.Flag     key in UI.Flags  → table of selected strings
+			-- opts.Options  array of strings
+			-- opts.Default  array of pre-selected strings (optional)
+			-- opts.Callback called with (selectedTable) on every change
+			-- opts.Size     "sm"|"md"|"lg"|"xl"
+			------------------------------------------------------------------
+			function api:CreateMultiSelect(opts)
+				-- Header row shows name + count badge + chevron
+				local rh = ({ sm = SZ.rowSM, md = SZ.rowMD, lg = SZ.rowLG, xl = SZ.rowXL })[opts.Size] or SZ.rowMD
+				local nameSz = ({ sm = SZ.txtSM, md = SZ.txtMD, lg = SZ.txtLG, xl = SZ.txtXL })[opts.Size] or SZ.txtMD
+				local headerRow = row(rh)
+
+				-- selected set
+				local selected = {}
+				if opts.Default then
+					for _, v in ipairs(opts.Default) do
+						selected[v] = true
+					end
+				end
+				UI.Flags[opts.Flag] = selected
+
+				-- name label
+				txt(headerRow, opts.Name, s(12), 0, RW - s(80), rh, "Text", nameSz, "base", 6)
+
+				-- count badge
+				local badgeW = s(32)
+				local badge =
+					frame(headerRow, RW - badgeW - s(28), math.floor((rh - s(18)) / 2), badgeW, s(18), "TagBg", 6)
+				rnd(badge, 99)
+				local countLbl = txt(badge, "0", 0, 0, badgeW, s(18), "TagText", SZ.txtXS, "bold", 7)
+				countLbl.TextXAlignment = Enum.TextXAlignment.Center
+
+				-- chevron
+				local chev = txt(headerRow, "v", RW - s(22), 0, s(16), rh, "Muted", SZ.txtXS, "bold", 6)
+				chev.TextXAlignment = Enum.TextXAlignment.Center
+
+				-- click area on header
+				local headerHit = Instance.new("TextButton", headerRow)
+				headerHit.Size = UDim2.new(0, RW, 0, rh)
+				headerHit.BackgroundTransparency = 1
+				headerHit.Text = ""
+				headerHit.ZIndex = 8
+
+				-- expandable list panel (inline, not floating, so it pushes layout)
+				local OPH = s(28)
+				local listPanel = Instance.new("Frame", holder)
+				listPanel.Size = UDim2.new(0, RW, 0, 0)
+				listPanel.BackgroundTransparency = 1
+				listPanel.BorderSizePixel = 0
+				listPanel.ZIndex = 5
+				listPanel.ClipsDescendants = true
+
+				local listLL = Instance.new("UIListLayout", listPanel)
+				listLL.Padding = UDim.new(0, 0)
+				listLL.SortOrder = Enum.SortOrder.LayoutOrder
+
+				-- "Select All / Clear" bar
+				local ctrlRow = Instance.new("Frame", listPanel)
+				ctrlRow.Size = UDim2.new(0, RW, 0, s(24))
+				ctrlRow.BackgroundTransparency = 1
+				ctrlRow.BorderSizePixel = 0
+				ctrlRow.ZIndex = 5
+
+				local function countSelected()
+					local n = 0
+					for _ in pairs(selected) do
+						n = n + 1
+					end
+					return n
+				end
+
+				local function refreshCount()
+					countLbl.Text = tostring(countSelected())
+				end
+
+				local function fireCallback()
+					local t = {}
+					for k in pairs(selected) do
+						table.insert(t, k)
+					end
+					UI.Flags[opts.Flag] = selected
+					if opts.Callback then
+						opts.Callback(t)
+					end
+				end
+
+				-- all option rows (built first so Select All can reference them)
+				local optFrames = {}
+
+				local function rebuildOptionColors()
+					for _, of in pairs(optFrames) do
+						local isOn = selected[of.opt] == true
+						tw(of.bg, { BackgroundColor3 = isOn and C.TagBg or C.White }, 0.1)
+						of.lbl.TextColor3 = isOn and C.Accent or C.Text
+						of.check.Text = isOn and "✓" or ""
+						of.check.TextColor3 = C.Accent
+					end
+				end
+
+				-- Select All button
+				local selAllBtn = Instance.new("TextButton", ctrlRow)
+				selAllBtn.Size = UDim2.new(0, math.floor(RW / 2) - s(14), 0, s(20))
+				selAllBtn.Position = UDim2.new(0, s(12), 0, s(2))
+				selAllBtn.BackgroundTransparency = 1
+				selAllBtn.Text = "Select all"
+				selAllBtn.TextColor3 = C.Accent
+				selAllBtn.Font = _fontBase
+				selAllBtn.TextSize = SZ.txtXS
+				selAllBtn.TextXAlignment = Enum.TextXAlignment.Left
+				selAllBtn.BorderSizePixel = 0
+				selAllBtn.ZIndex = 6
+				selAllBtn.MouseButton1Click:Connect(function()
+					for _, opt in ipairs(opts.Options) do
+						selected[opt] = true
+					end
+					rebuildOptionColors()
+					refreshCount()
+					fireCallback()
+				end)
+
+				-- Clear button
+				local clearBtn = Instance.new("TextButton", ctrlRow)
+				clearBtn.Size = UDim2.new(0, math.floor(RW / 2) - s(14), 0, s(20))
+				clearBtn.Position = UDim2.new(0, math.floor(RW / 2) + s(2), 0, s(2))
+				clearBtn.BackgroundTransparency = 1
+				clearBtn.Text = "Clear"
+				clearBtn.TextColor3 = C.Danger
+				clearBtn.Font = _fontBase
+				clearBtn.TextSize = SZ.txtXS
+				clearBtn.TextXAlignment = Enum.TextXAlignment.Left
+				clearBtn.BorderSizePixel = 0
+				clearBtn.ZIndex = 6
+				clearBtn.MouseButton1Click:Connect(function()
+					for k in pairs(selected) do
+						selected[k] = nil
+					end
+					rebuildOptionColors()
+					refreshCount()
+					fireCallback()
+				end)
+
+				-- option rows
+				for _, opt in ipairs(opts.Options) do
+					local or2 = Instance.new("Frame", listPanel)
+					or2.Size = UDim2.new(0, RW, 0, OPH)
+					or2.BorderSizePixel = 0
+					or2.ZIndex = 5
+					reg(or2, "BackgroundColor3", "White")
+
+					-- left accent bar (shown when selected)
+					local acBar = frame(or2, 0, s(4), s(3), OPH - s(8), "Accent", 6)
+					acBar.Visible = selected[opt] == true
+
+					-- background tint
+					local opBg = frame(or2, s(3), 0, RW - s(3), OPH, selected[opt] and "TagBg" or "White", 6)
+
+					-- checkmark
+					local chk = Instance.new("TextLabel", or2)
+					chk.Size = UDim2.new(0, s(20), 0, OPH)
+					chk.Position = UDim2.new(0, s(10), 0, 0)
+					chk.BackgroundTransparency = 1
+					chk.Text = selected[opt] and "✓" or ""
+					chk.TextColor3 = C.Accent
+					chk.Font = _fontBold
+					chk.TextSize = SZ.txtSM
+					chk.TextXAlignment = Enum.TextXAlignment.Center
+					chk.ZIndex = 7
+
+					-- label
+					local ol = txt(
+						or2,
+						opt,
+						s(32),
+						0,
+						RW - s(44),
+						OPH,
+						selected[opt] and "Accent" or "Text",
+						nameSz,
+						"base",
+						7
+					)
+
+					-- bottom divider
+					frame(or2, s(32), OPH - 1, RW - s(44), 1, "Panel", 5)
+
+					-- hover
+					or2.MouseEnter:Connect(function()
+						if not selected[opt] then
+							tw(opBg, { BackgroundColor3 = C.Base }, 0.08)
+						end
+					end)
+					or2.MouseLeave:Connect(function()
+						if not selected[opt] then
+							tw(opBg, { BackgroundColor3 = C.White }, 0.08)
+						end
+					end)
+
+					local hit2 = Instance.new("TextButton", or2)
+					hit2.Size = UDim2.new(0, RW, 0, OPH)
+					hit2.BackgroundTransparency = 1
+					hit2.Text = ""
+					hit2.ZIndex = 8
+					hit2.MouseButton1Click:Connect(function()
+						if selected[opt] then
+							selected[opt] = nil
+						else
+							selected[opt] = true
+						end
+						local isOn = selected[opt] == true
+						acBar.Visible = isOn
+						tw(opBg, { BackgroundColor3 = isOn and C.TagBg or C.White }, 0.1)
+						ol.TextColor3 = isOn and C.Accent or C.Text
+						chk.Text = isOn and "✓" or ""
+						refreshCount()
+						fireCallback()
+					end)
+
+					table.insert(optFrames, { opt = opt, bg = opBg, lbl = ol, check = chk, bar = acBar })
+				end
+
+				refreshCount()
+
+				-- toggle open/close
+				local collapsed = true
+				local totalH = s(24) + #opts.Options * OPH
+
+				headerHit.MouseButton1Click:Connect(function()
+					collapsed = not collapsed
+					tw(chev, { Rotation = collapsed and 0 or 180 }, 0.15)
+					tw(listPanel, { Size = UDim2.new(0, RW, 0, collapsed and 0 or totalH) }, 0.18)
+				end)
+
+				return {
+					GetSelected = function(_)
+						local t = {}
+						for k in pairs(selected) do
+							table.insert(t, k)
+						end
+						return t
+					end,
+					SetSelected = function(_, arr)
+						for k in pairs(selected) do
+							selected[k] = nil
+						end
+						for _, v in ipairs(arr) do
+							selected[v] = true
+						end
+						rebuildOptionColors()
+						refreshCount()
+						fireCallback()
+					end,
+					AddOption = function(_, opt)
+						if not table.find(opts.Options, opt) then
+							table.insert(opts.Options, opt)
+							-- rebuild would need full re-render; simplest is re-open
+						end
+					end,
+				}
+			end
+
+			------------------------------------------------------------------
 			-- BUTTON
 			-- opts.Size = "sm"|"md"|"lg"|"xl"
 			-- opts.Style = "accent"|"danger"|"ghost"   (default = dark fill)
