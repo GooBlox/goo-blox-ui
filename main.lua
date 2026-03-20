@@ -1,27 +1,49 @@
 local UI = {}
 UI.Flags = {}
 
+local TweenService = game:GetService("TweenService")
+local Lighting = game:GetService("Lighting")
+
+-- 🎨 CONFIG
+local ACCENT = Color3.fromRGB(120, 180, 255)
+
+local function tween(obj, props, t)
+	TweenService:Create(obj, TweenInfo.new(t or 0.2), props):Play()
+end
+
 function UI:CreateWindow(title)
 	if game.CoreGui:FindFirstChild("MyUILib") then
 		game.CoreGui.MyUILib:Destroy()
 	end
 
+	-- 🌫 BLUR
+	local blur = Instance.new("BlurEffect", Lighting)
+	blur.Size = 0
+	tween(blur, { Size = 12 }, 0.3)
+
+	-- GUI
 	local gui = Instance.new("ScreenGui")
 	gui.Name = "MyUILib"
 	gui.Parent = game.CoreGui
 
 	local main = Instance.new("Frame", gui)
-	main.Size = UDim2.new(0, 360, 0, 260)
-	main.Position = UDim2.new(0.5, -180, 0.5, -130)
-	main.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+	main.Size = UDim2.new(0, 380, 0, 270)
+	main.Position = UDim2.new(0.5, -190, 0.5, -135)
+	main.BackgroundColor3 = Color3.fromRGB(28, 28, 32)
 	main.Active = true
 	main.Draggable = true
-	Instance.new("UICorner", main)
+	Instance.new("UICorner", main).CornerRadius = UDim.new(0, 8)
+
+	-- 💡 Glow
+	local stroke = Instance.new("UIStroke", main)
+	stroke.Color = ACCENT
+	stroke.Thickness = 1
+	stroke.Transparency = 0.7
 
 	-- HEADER
 	local header = Instance.new("Frame", main)
-	header.Size = UDim2.new(1, 0, 0, 30)
-	header.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+	header.Size = UDim2.new(1, 0, 0, 32)
+	header.BackgroundColor3 = Color3.fromRGB(35, 35, 40)
 
 	local titleLabel = Instance.new("TextLabel", header)
 	titleLabel.Size = UDim2.new(1, -40, 1, 0)
@@ -29,28 +51,41 @@ function UI:CreateWindow(title)
 	titleLabel.Text = title
 	titleLabel.BackgroundTransparency = 1
 	titleLabel.TextColor3 = Color3.new(1, 1, 1)
+	titleLabel.TextSize = 14
 	titleLabel.TextXAlignment = Enum.TextXAlignment.Left
 
+	-- ❌ CLOSE
 	local close = Instance.new("TextButton", header)
-	close.Size = UDim2.new(0, 25, 0, 25)
-	close.Position = UDim2.new(1, -28, 0, 2)
+	close.Size = UDim2.new(0, 26, 0, 26)
+	close.Position = UDim2.new(1, -30, 0, 3)
 	close.Text = "X"
-	close.BackgroundColor3 = Color3.fromRGB(180, 60, 60)
+	close.BackgroundColor3 = Color3.fromRGB(150, 60, 60)
 	close.TextColor3 = Color3.new(1, 1, 1)
 
+	close.MouseEnter:Connect(function()
+		tween(close, { BackgroundColor3 = Color3.fromRGB(200, 80, 80) })
+	end)
+
+	close.MouseLeave:Connect(function()
+		tween(close, { BackgroundColor3 = Color3.fromRGB(150, 60, 60) })
+	end)
+
 	close.MouseButton1Click:Connect(function()
+		tween(blur, { Size = 0 }, 0.2)
+		task.wait(0.2)
+		blur:Destroy()
 		gui:Destroy()
 	end)
 
 	-- LEFT NAV
 	local tabsHolder = Instance.new("Frame", main)
-	tabsHolder.Size = UDim2.new(0, 110, 1, -30)
-	tabsHolder.Position = UDim2.new(0, 0, 0, 30)
-	tabsHolder.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+	tabsHolder.Size = UDim2.new(0, 110, 1, -32)
+	tabsHolder.Position = UDim2.new(0, 0, 0, 32)
+	tabsHolder.BackgroundColor3 = Color3.fromRGB(22, 22, 26)
 
 	local content = Instance.new("Frame", main)
-	content.Size = UDim2.new(1, -110, 1, -30)
-	content.Position = UDim2.new(0, 110, 0, 30)
+	content.Size = UDim2.new(1, -110, 1, -32)
+	content.Position = UDim2.new(0, 110, 0, 32)
 	content.BackgroundTransparency = 1
 
 	local window = {}
@@ -59,8 +94,16 @@ function UI:CreateWindow(title)
 		local tabBtn = Instance.new("TextButton", tabsHolder)
 		tabBtn.Size = UDim2.new(1, 0, 0, 26)
 		tabBtn.Text = name
-		tabBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+		tabBtn.BackgroundColor3 = Color3.fromRGB(35, 35, 40)
 		tabBtn.TextColor3 = Color3.new(1, 1, 1)
+
+		tabBtn.MouseEnter:Connect(function()
+			tween(tabBtn, { BackgroundColor3 = ACCENT })
+		end)
+
+		tabBtn.MouseLeave:Connect(function()
+			tween(tabBtn, { BackgroundColor3 = Color3.fromRGB(35, 35, 40) })
+		end)
 
 		local page = Instance.new("ScrollingFrame", content)
 		page.Size = UDim2.new(1, 0, 1, 0)
@@ -87,7 +130,8 @@ function UI:CreateWindow(title)
 			local section = Instance.new("Frame", page)
 			section.AutomaticSize = Enum.AutomaticSize.Y
 			section.Size = UDim2.new(1, -6, 0, 0)
-			section.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+			section.BackgroundColor3 = Color3.fromRGB(35, 35, 40)
+			Instance.new("UICorner", section)
 
 			local title = Instance.new("TextLabel", section)
 			title.Size = UDim2.new(1, 0, 0, 20)
@@ -103,15 +147,15 @@ function UI:CreateWindow(title)
 			holder.BackgroundTransparency = 1
 
 			local layout = Instance.new("UIListLayout", holder)
-			layout.Padding = UDim.new(0, 3)
+			layout.Padding = UDim.new(0, 4)
 
 			local sectionAPI = {}
 
-			-- 🔘 TOGGLE SWITCH
+			-- 🔘 TOGGLE (ANIMATED)
 			function sectionAPI:CreateToggle(opts)
 				local btn = Instance.new("TextButton", holder)
 				btn.Size = UDim2.new(1, 0, 0, 24)
-				btn.BackgroundColor3 = Color3.fromRGB(55, 55, 55)
+				btn.BackgroundColor3 = Color3.fromRGB(45, 45, 50)
 				btn.Text = ""
 
 				local label = Instance.new("TextLabel", btn)
@@ -125,20 +169,22 @@ function UI:CreateWindow(title)
 				toggle.Size = UDim2.new(0, 40, 0, 18)
 				toggle.Position = UDim2.new(1, -45, 0.5, -9)
 				toggle.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
+				Instance.new("UICorner", toggle)
 
 				local knob = Instance.new("Frame", toggle)
 				knob.Size = UDim2.new(0, 18, 1, 0)
-				knob.BackgroundColor3 = Color3.fromRGB(200, 200, 200)
+				knob.BackgroundColor3 = Color3.new(1, 1, 1)
+				Instance.new("UICorner", knob)
 
 				local state = opts.CurrentValue or false
 
 				local function update()
 					if state then
-						toggle.BackgroundColor3 = Color3.fromRGB(60, 140, 60)
-						knob.Position = UDim2.new(1, -18, 0, 0)
+						tween(toggle, { BackgroundColor3 = ACCENT })
+						tween(knob, { Position = UDim2.new(1, -18, 0, 0) })
 					else
-						toggle.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
-						knob.Position = UDim2.new(0, 0, 0, 0)
+						tween(toggle, { BackgroundColor3 = Color3.fromRGB(80, 80, 80) })
+						tween(knob, { Position = UDim2.new(0, 0, 0, 0) })
 					end
 
 					if opts.Flag then
@@ -153,76 +199,6 @@ function UI:CreateWindow(title)
 					update()
 					if opts.Callback then
 						opts.Callback(state)
-					end
-				end)
-			end
-
-			-- 🎚 SLIDER
-			function sectionAPI:CreateSlider(opts)
-				local frame = Instance.new("Frame", holder)
-				frame.Size = UDim2.new(1, 0, 0, 40)
-				frame.BackgroundTransparency = 1
-
-				local label = Instance.new("TextLabel", frame)
-				label.Size = UDim2.new(1, 0, 0, 15)
-				label.Text = opts.Name .. ": " .. opts.CurrentValue
-				label.BackgroundTransparency = 1
-				label.TextColor3 = Color3.new(1, 1, 1)
-
-				local bar = Instance.new("Frame", frame)
-				bar.Size = UDim2.new(1, 0, 0, 6)
-				bar.Position = UDim2.new(0, 0, 0, 20)
-				bar.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
-
-				local fill = Instance.new("Frame", bar)
-				fill.Size = UDim2.new(0, 0, 1, 0)
-				fill.BackgroundColor3 = Color3.fromRGB(100, 180, 100)
-
-				bar.InputBegan:Connect(function(input)
-					if input.UserInputType == Enum.UserInputType.MouseButton1 then
-						local x = input.Position.X - bar.AbsolutePosition.X
-						local percent = math.clamp(x / bar.AbsoluteSize.X, 0, 1)
-						local value = math.floor(opts.Min + (opts.Max - opts.Min) * percent)
-
-						fill.Size = UDim2.new(percent, 0, 1, 0)
-						label.Text = opts.Name .. ": " .. value
-
-						if opts.Flag then
-							UI.Flags[opts.Flag] = value
-						end
-
-						if opts.Callback then
-							opts.Callback(value)
-						end
-					end
-				end)
-			end
-
-			-- 📋 DROPDOWN
-			function sectionAPI:CreateDropdown(opts)
-				local btn = Instance.new("TextButton", holder)
-				btn.Size = UDim2.new(1, 0, 0, 24)
-				btn.Text = opts.Name .. ": " .. (opts.Options[1] or "")
-				btn.BackgroundColor3 = Color3.fromRGB(55, 55, 55)
-				btn.TextColor3 = Color3.new(1, 1, 1)
-
-				local index = 1
-
-				btn.MouseButton1Click:Connect(function()
-					index = index + 1
-					if index > #opts.Options then
-						index = 1
-					end
-
-					local val = opts.Options[index]
-					btn.Text = opts.Name .. ": " .. val
-
-					if opts.Flag then
-						UI.Flags[opts.Flag] = val
-					end
-
-					if opts.Callback then
-						opts.Callback(val)
 					end
 				end)
 			end
