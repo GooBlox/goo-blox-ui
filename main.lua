@@ -63,9 +63,6 @@ function UI:CreateWindow(title)
 		game.CoreGui.MyUILib:Destroy()
 	end
 
-	local blur = Instance.new("BlurEffect", Lighting)
-	tween(blur, { Size = 10 }, 0.3)
-
 	local gui = Instance.new("ScreenGui")
 	gui.Name = "MyUILib"
 	gui.Parent = game.CoreGui
@@ -86,12 +83,20 @@ function UI:CreateWindow(title)
 	header.BackgroundColor3 = Color3.fromRGB(35, 35, 40)
 
 	local titleLabel = Instance.new("TextLabel", header)
-	titleLabel.Size = UDim2.new(1, -40, 1, 0)
+	titleLabel.Size = UDim2.new(1, -80, 1, 0)
 	titleLabel.Position = UDim2.new(0, 10, 0, 0)
 	titleLabel.Text = title
 	titleLabel.BackgroundTransparency = 1
 	titleLabel.TextColor3 = Color3.new(1, 1, 1)
 
+	-- 🟡 MINIMIZE BUTTON
+	local minimize = Instance.new("TextButton", header)
+	minimize.Size = UDim2.new(0, 26, 0, 26)
+	minimize.Position = UDim2.new(1, -60, 0, 3)
+	minimize.Text = "-"
+	minimize.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
+
+	-- 🔴 CLOSE BUTTON
 	local close = Instance.new("TextButton", header)
 	close.Size = UDim2.new(0, 26, 0, 26)
 	close.Position = UDim2.new(1, -30, 0, 3)
@@ -101,8 +106,21 @@ function UI:CreateWindow(title)
 	close.MouseButton1Click:Connect(function()
 		tween(blur, { Size = 0 }, 0.2)
 		task.wait(0.2)
-		blur:Destroy()
 		gui:Destroy()
+	end)
+
+	-- MINIMIZE Logic
+	local visible = true
+
+	UserInputService.InputBegan:Connect(function(input, gp)
+		if gp then
+			return
+		end
+
+		if input.KeyCode == Enum.KeyCode.RightControl then
+			visible = not visible
+			gui.Enabled = visible
+		end
 	end)
 
 	-- KEYBIND
