@@ -1,6 +1,46 @@
 local UI = {}
 UI.Flags = {}
 
+function UI:Notify(text, duration)
+	duration = duration or 2
+
+	local gui = game.CoreGui:FindFirstChild("MyUILib")
+	if not gui then
+		return
+	end
+
+	local notif = Instance.new("Frame", gui)
+	notif.Size = UDim2.new(0, 200, 0, 40)
+	notif.Position = UDim2.new(1, -220, 1, -60)
+	notif.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+
+	Instance.new("UICorner", notif)
+
+	local label = Instance.new("TextLabel", notif)
+	label.Size = UDim2.new(1, 0, 1, 0)
+	label.BackgroundTransparency = 1
+	label.Text = text
+	label.TextColor3 = Color3.new(1, 1, 1)
+
+	notif.Position = notif.Position + UDim2.new(0, 0, 0, 50)
+
+	game:GetService("TweenService")
+		:Create(notif, TweenInfo.new(0.3), {
+			Position = UDim2.new(1, -220, 1, -110),
+		})
+		:Play()
+
+	task.delay(duration, function()
+		game:GetService("TweenService")
+			:Create(notif, TweenInfo.new(0.3), {
+				Position = UDim2.new(1, -220, 1, -60),
+			})
+			:Play()
+		task.wait(0.3)
+		notif:Destroy()
+	end)
+end
+
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local HttpService = game:GetService("HttpService")
