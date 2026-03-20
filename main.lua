@@ -1,6 +1,18 @@
 local UI = {}
 UI.Flags = {}
 
+local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
+local HttpService = game:GetService("HttpService")
+local Lighting = game:GetService("Lighting")
+
+local ACCENT = Color3.fromRGB(120, 180, 255)
+
+local function tween(obj, props, t)
+	TweenService:Create(obj, TweenInfo.new(t or 0.2), props):Play()
+end
+
+-- 🔔 NOTIFICATION
 function UI:Notify(text, duration)
 	duration = duration or 2
 
@@ -13,7 +25,6 @@ function UI:Notify(text, duration)
 	notif.Size = UDim2.new(0, 200, 0, 40)
 	notif.Position = UDim2.new(1, -220, 1, -60)
 	notif.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-
 	Instance.new("UICorner", notif)
 
 	local label = Instance.new("TextLabel", notif)
@@ -24,35 +35,16 @@ function UI:Notify(text, duration)
 
 	notif.Position = notif.Position + UDim2.new(0, 0, 0, 50)
 
-	game:GetService("TweenService")
-		:Create(notif, TweenInfo.new(0.3), {
-			Position = UDim2.new(1, -220, 1, -110),
-		})
-		:Play()
+	tween(notif, { Position = UDim2.new(1, -220, 1, -110) }, 0.3)
 
 	task.delay(duration, function()
-		game:GetService("TweenService")
-			:Create(notif, TweenInfo.new(0.3), {
-				Position = UDim2.new(1, -220, 1, -60),
-			})
-			:Play()
+		tween(notif, { Position = UDim2.new(1, -220, 1, -60) }, 0.3)
 		task.wait(0.3)
 		notif:Destroy()
 	end)
 end
 
-local TweenService = game:GetService("TweenService")
-local UserInputService = game:GetService("UserInputService")
-local HttpService = game:GetService("HttpService")
-local Lighting = game:GetService("Lighting")
-
-local ACCENT = Color3.fromRGB(120, 180, 255)
-
-local function tween(obj, props, t)
-	TweenService:Create(obj, TweenInfo.new(t or 0.2), props):Play()
-end
-
--- 💾 CONFIG SYSTEM
+-- 💾 CONFIG
 function UI:SaveConfig(name)
 	writefile(name .. ".json", HttpService:JSONEncode(UI.Flags))
 end
@@ -71,17 +63,16 @@ function UI:CreateWindow(title)
 		game.CoreGui.MyUILib:Destroy()
 	end
 
-	-- 🌫 BLUR
 	local blur = Instance.new("BlurEffect", Lighting)
-	tween(blur, { Size = 12 }, 0.3)
+	tween(blur, { Size = 10 }, 0.3)
 
 	local gui = Instance.new("ScreenGui")
 	gui.Name = "MyUILib"
 	gui.Parent = game.CoreGui
 
 	local main = Instance.new("Frame", gui)
-	main.Size = UDim2.new(0, 400, 0, 280)
-	main.Position = UDim2.new(0.5, -200, 0.5, -140)
+	main.Size = UDim2.new(0, 380, 0, 260)
+	main.Position = UDim2.new(0.5, -190, 0.5, -130)
 	main.BackgroundColor3 = Color3.fromRGB(28, 28, 32)
 	main.Active = true
 	main.Draggable = true
@@ -101,7 +92,6 @@ function UI:CreateWindow(title)
 	titleLabel.BackgroundTransparency = 1
 	titleLabel.TextColor3 = Color3.new(1, 1, 1)
 
-	-- CLOSE
 	local close = Instance.new("TextButton", header)
 	close.Size = UDim2.new(0, 26, 0, 26)
 	close.Position = UDim2.new(1, -30, 0, 3)
@@ -115,9 +105,9 @@ function UI:CreateWindow(title)
 		gui:Destroy()
 	end)
 
-	-- 🎮 KEYBIND (RightControl)
-	UserInputService.InputBegan:Connect(function(input, gp)
-		if input.KeyCode == Enum.KeyCode.RightControl then
+	-- KEYBIND
+	UserInputService.InputBegan:Connect(function(i, gp)
+		if not gp and i.KeyCode == Enum.KeyCode.RightControl then
 			gui.Enabled = not gui.Enabled
 		end
 	end)
@@ -190,35 +180,61 @@ function UI:CreateWindow(title)
 				local btn = Instance.new("TextButton", holder)
 				btn.Size = UDim2.new(1, 0, 0, 24)
 				btn.BackgroundColor3 = Color3.fromRGB(45, 45, 50)
-				btn.Text = opts.Name
 
 				local state = opts.CurrentValue or false
 
+				local function update()
+					btn.Text = opts.Name .. ": " .. (state and "ON" or "OFF")
+					UI.Flags[opts.Flag] = state
+				end
+
+				update()
+
 				btn.MouseButton1Click:Connect(function()
 					state = not state
-					UI.Flags[opts.Flag] = state
+					update()
 					if opts.Callback then
 						opts.Callback(state)
 					end
 				end)
 			end
 
-			-- 🎚 SLIDER (DRAG)
+			-- 🎚 SLIDER
 			function api:CreateSlider(opts)
 				local frame = Instance.new("Frame", holder)
 				frame.Size = UDim2.new(1, 0, 0, 40)
 				frame.BackgroundTransparency = 1
 
+				local label = Instance.new("TextLabel", frame)
+				label.Size = UDim2.new(1, 0, 0, 16)
+				label.BackgroundTransparency = 1
+				label.TextColor3 = Color3.new(1, 1, 1)
+				label.TextXAlignment = Enum.TextXAlignment.Left
+
 				local bar = Instance.new("Frame", frame)
 				bar.Size = UDim2.new(1, 0, 0, 6)
-				bar.Position = UDim2.new(0, 0, 0, 20)
+				bar.Position = UDim2.new(0, 0, 0, 22)
 				bar.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+				Instance.new("UICorner", bar)
 
 				local fill = Instance.new("Frame", bar)
-				fill.Size = UDim2.new(0, 0, 1, 0)
 				fill.BackgroundColor3 = ACCENT
+				Instance.new("UICorner", fill)
 
+				local value = opts.CurrentValue or opts.Min
 				local dragging = false
+
+				local function update(val)
+					local percent = (val - opts.Min) / (opts.Max - opts.Min)
+					fill.Size = UDim2.new(percent, 0, 1, 0)
+					label.Text = opts.Name .. ": " .. val
+					UI.Flags[opts.Flag] = val
+					if opts.Callback then
+						opts.Callback(val)
+					end
+				end
+
+				update(value)
 
 				bar.InputBegan:Connect(function(i)
 					if i.UserInputType == Enum.UserInputType.MouseButton1 then
@@ -235,20 +251,14 @@ function UI:CreateWindow(title)
 				UserInputService.InputChanged:Connect(function(i)
 					if dragging then
 						local x = i.Position.X - bar.AbsolutePosition.X
-						local p = math.clamp(x / bar.AbsoluteSize.X, 0, 1)
-						fill.Size = UDim2.new(p, 0, 1, 0)
-
-						local val = math.floor(opts.Min + (opts.Max - opts.Min) * p)
-						UI.Flags[opts.Flag] = val
-
-						if opts.Callback then
-							opts.Callback(val)
-						end
+						local percent = math.clamp(x / bar.AbsoluteSize.X, 0, 1)
+						local val = math.floor(opts.Min + (opts.Max - opts.Min) * percent)
+						update(val)
 					end
 				end)
 			end
 
-			-- 📋 DROPDOWN (REAL)
+			-- 📋 DROPDOWN
 			function api:CreateDropdown(opts)
 				local frame = Instance.new("Frame", holder)
 				frame.Size = UDim2.new(1, 0, 0, 24)
@@ -256,8 +266,11 @@ function UI:CreateWindow(title)
 
 				local btn = Instance.new("TextButton", frame)
 				btn.Size = UDim2.new(1, 0, 1, 0)
-				btn.Text = opts.Name
 				btn.BackgroundTransparency = 1
+
+				local selected = opts.Options[1]
+				btn.Text = opts.Name .. ": " .. selected
+				UI.Flags[opts.Flag] = selected
 
 				local list = Instance.new("Frame", frame)
 				list.Position = UDim2.new(0, 0, 1, 0)
@@ -271,16 +284,18 @@ function UI:CreateWindow(title)
 
 				btn.MouseButton1Click:Connect(function()
 					open = not open
-					tween(list, { Size = UDim2.new(1, 0, 0, open and (#opts.Options * 20) or 0) })
+					tween(list, { Size = UDim2.new(1, 0, 0, open and (#opts.Options * 22) or 0) })
 				end)
 
 				for _, opt in pairs(opts.Options) do
 					local o = Instance.new("TextButton", list)
-					o.Size = UDim2.new(1, 0, 0, 20)
+					o.Size = UDim2.new(1, 0, 0, 22)
 					o.Text = opt
 					o.BackgroundColor3 = Color3.fromRGB(50, 50, 55)
 
 					o.MouseButton1Click:Connect(function()
+						selected = opt
+						btn.Text = opts.Name .. ": " .. opt
 						UI.Flags[opts.Flag] = opt
 						if opts.Callback then
 							opts.Callback(opt)
