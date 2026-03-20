@@ -1,296 +1,427 @@
 --[[
-    FlatGrayUI — Complete Usage Example
-    Covers EVERY component:
-        Toggle, Slider, Dropdown, Button, Input,
-        Keybind, ColorPicker, Label, Paragraph, Divider
-    Plus:
-        Notify (4 kinds), SaveConfig, LoadConfig, SetTheme
-        SetStatus, window:SetStatus
+    FlatGrayUI — Size & Font Example
+    ══════════════════════════════════════════════════════════
+    SIZE SYSTEM
+      Set globally before CreateWindow:
+        UI:SetSize("sm")   -- compact
+        UI:SetSize("md")   -- default
+        UI:SetSize("lg")   -- comfortable
+        UI:SetSize("xl")   -- large / accessibility
+
+      Or per-component via opts.Size = "sm"|"md"|"lg"|"xl"
+
+    FONT SUPPORT
+      Set globally before CreateWindow:
+        UI:SetFont("gotham")            -- base only, auto bold
+        UI:SetFont("gotham", "gothamBold")  -- base + bold
+        UI:SetFont(Enum.Font.Arial)     -- raw Enum.Font also works
+
+      Font aliases you can use as strings:
+        "gotham"          "gothamBold"     "gothamSemibold"
+        "arial"           "arialBold"
+        "roboto"          "robotoBold"
+        "code"            "serif"
+        "ubuntu"          "sourceSans"
+
+      Or per-component via opts.Font = "code" (Button, Input, Label, Paragraph)
+    ══════════════════════════════════════════════════════════
 --]]
 
--- ── LOAD UI ─────────────────────────────────────────────────────────────────
 local UI = loadstring(game:HttpGet("https://raw.githubusercontent.com/GooBlox/goo-blox-ui/refs/heads/main/main.lua"))()
 
--- ── WINDOW ──────────────────────────────────────────────────────────────────
--- CreateWindow(title, subtitle)
--- subtitle shows as a small badge next to the title
-local Window = UI:CreateWindow("Goo Blox", "v2.0")
+-- ── GLOBAL SETUP (call BEFORE CreateWindow) ─────────────────────────────────
 
--- ── OPTIONAL: set theme before building the UI ───────────────────────────────
--- Themes: "light" (default), "dark", "ocean"
+-- Choose window size:  "sm" | "md" | "lg" | "xl"
+UI:SetSize("md")
+
+-- Choose global font (base text + bold/header text)
+UI:SetFont("gotham", "gothamSemibold")
+
+-- Choose color theme:  "light" | "dark" | "ocean"
 -- UI:SetTheme("dark")
 
+-- ── WINDOW ──────────────────────────────────────────────────────────────────
+local Window = UI:CreateWindow("Goo Blox", "v2.0")
+
 -- ============================================================================
--- TAB 1 — FARM
+-- TAB 1 — SIZE SHOWCASE
+-- Demonstrates every component at every size
 -- ============================================================================
-local FarmTab = Window:CreateTab("Farm")
+local SizeTab = Window:CreateTab("Sizes")
 
--- ── SECTION: Auto Farm ──────────────────────────────────────────────────────
-local FarmSection = FarmTab:CreateSection("Auto Farm")
+-- ── TOGGLE at each size ────────────────────────────────────────────────────
+local togSection = SizeTab:CreateSection("Toggle — all sizes")
 
--- DIVIDER with label — useful to group things inside a section
-FarmSection:CreateDivider("Core")
-
--- TOGGLE  ────────────────────────────────────────────────────────────────────
--- Name        display name
--- Flag        key in UI.Flags (read with UI.Flags.AutoFarm)
--- CurrentValue starting state (true/false)
--- Description optional sub-text under the name
--- Callback    called with (bool) every time state changes
-local toggleObj = FarmSection:CreateToggle({
-	Name = "Auto Farm",
-	Flag = "AutoFarm",
+togSection:CreateToggle({
+	Name = "Toggle sm",
+	Flag = "tog_sm",
+	Size = "sm",
 	CurrentValue = false,
-	Description = "Fire projectile at nearest target",
 	Callback = function(v)
-		UI:Notify(v and "Auto Farm ON" or "Auto Farm OFF", 2, v and "success" or "info")
-		Window:SetStatus(v and "Auto Farm running" or "Ready", v and "running" or "ok")
+		print("tog_sm:", v)
 	end,
 })
 
-FarmSection:CreateToggle({
-	Name = "Auto Jump",
-	Flag = "AutoJump",
+togSection:CreateToggle({
+	Name = "Toggle md",
+	Flag = "tog_md",
+	Size = "md",
+	Description = "Default size with description",
+	CurrentValue = true,
+	Callback = function(v)
+		print("tog_md:", v)
+	end,
+})
+
+togSection:CreateToggle({
+	Name = "Toggle lg",
+	Flag = "tog_lg",
+	Size = "lg",
+	Description = "Large — easier to tap on screen",
 	CurrentValue = false,
-	Description = "Teleport on top of the target",
 	Callback = function(v)
-		UI:Notify(v and "Auto Jump ON" or "Auto Jump OFF", 2, v and "success" or "info")
+		print("tog_lg:", v)
 	end,
 })
 
--- DIVIDER bare — just a horizontal rule
-FarmSection:CreateDivider()
-
--- SLIDER  ─────────────────────────────────────────────────────────────────────
--- Min / Max / CurrentValue   numeric range
--- Callback    called with (number) on every drag tick
-local sliderObj = FarmSection:CreateSlider({
-	Name = "Range",
-	Flag = "Range",
-	Min = 10,
-	Max = 200,
-	CurrentValue = 100,
+togSection:CreateToggle({
+	Name = "Toggle xl",
+	Flag = "tog_xl",
+	Size = "xl",
+	Description = "Extra large — accessibility mode",
+	CurrentValue = false,
 	Callback = function(v)
-		-- UI.Flags.Range is updated automatically
+		print("tog_xl:", v)
 	end,
 })
 
-FarmSection:CreateSlider({
-	Name = "Attack Speed",
-	Flag = "AttackSpeed",
-	Min = 1,
-	Max = 20,
-	CurrentValue = 5,
-	Callback = function(v)
-		-- v is the ticks-per-second value
-	end,
+-- ── SLIDER at each size ────────────────────────────────────────────────────
+local sliderSection = SizeTab:CreateSection("Slider — all sizes")
+
+sliderSection:CreateSlider({
+	Name = "Slider sm",
+	Flag = "sl_sm",
+	Min = 0,
+	Max = 100,
+	CurrentValue = 25,
+	Size = "sm",
+})
+sliderSection:CreateSlider({
+	Name = "Slider md",
+	Flag = "sl_md",
+	Min = 0,
+	Max = 100,
+	CurrentValue = 50,
+	Size = "md",
+})
+sliderSection:CreateSlider({
+	Name = "Slider lg",
+	Flag = "sl_lg",
+	Min = 0,
+	Max = 100,
+	CurrentValue = 75,
+	Size = "lg",
+})
+sliderSection:CreateSlider({
+	Name = "Slider xl",
+	Flag = "sl_xl",
+	Min = 0,
+	Max = 100,
+	CurrentValue = 90,
+	Size = "xl",
 })
 
--- DROPDOWN  ───────────────────────────────────────────────────────────────────
--- Options   array of strings
--- Default   pre-selected value (optional, falls back to Options[1])
--- Callback  called with (string) when selection changes
-local dropObj = FarmSection:CreateDropdown({
-	Name = "Enemy Type",
-	Flag = "EnemyType",
-	Options = { "RockEnemies", "MagmaEnemies", "BossEnemies" },
+-- ── DROPDOWN at each size ──────────────────────────────────────────────────
+local dropSection = SizeTab:CreateSection("Dropdown — all sizes")
+
+dropSection:CreateDropdown({
+	Name = "Enemy sm",
+	Flag = "dd_sm",
+	Size = "sm",
+	Options = { "RockEnemies", "MagmaEnemies" },
 	Default = "RockEnemies",
-	Callback = function(v)
-		UI:Notify("Targeting: " .. v, 2, "info")
+})
+dropSection:CreateDropdown({
+	Name = "Enemy md",
+	Flag = "dd_md",
+	Size = "md",
+	Options = { "RockEnemies", "MagmaEnemies" },
+	Default = "RockEnemies",
+})
+dropSection:CreateDropdown({
+	Name = "Enemy lg",
+	Flag = "dd_lg",
+	Size = "lg",
+	Options = { "RockEnemies", "MagmaEnemies" },
+	Default = "MagmaEnemies",
+})
+dropSection:CreateDropdown({
+	Name = "Enemy xl",
+	Flag = "dd_xl",
+	Size = "xl",
+	Options = { "RockEnemies", "MagmaEnemies" },
+	Default = "RockEnemies",
+})
+
+-- ── BUTTON at each size + all styles ──────────────────────────────────────
+local btnSection = SizeTab:CreateSection("Button — sizes & styles")
+
+btnSection:CreateButton({
+	Name = "Button sm",
+	Size = "sm",
+	Style = "accent",
+	Callback = function()
+		UI:Notify("sm accent", 2, "info")
+	end,
+})
+btnSection:CreateButton({
+	Name = "Button md (default)",
+	Size = "md",
+	Callback = function()
+		UI:Notify("md default", 2, "info")
+	end,
+})
+btnSection:CreateButton({
+	Name = "Button lg accent",
+	Size = "lg",
+	Style = "accent",
+	Callback = function()
+		UI:Notify("lg accent", 2, "success")
+	end,
+})
+btnSection:CreateButton({
+	Name = "Button lg danger",
+	Size = "lg",
+	Style = "danger",
+	Callback = function()
+		UI:Notify("lg danger", 2, "error")
+	end,
+})
+btnSection:CreateButton({
+	Name = "Button xl ghost",
+	Size = "xl",
+	Style = "ghost",
+	Callback = function()
+		UI:Notify("xl ghost", 2, "warn")
 	end,
 })
 
-FarmSection:CreateDropdown({
-	Name = "Priority",
-	Flag = "Priority",
-	Options = { "Closest", "Lowest HP", "Highest HP" },
-	Default = "Closest",
-	Callback = function(v)
-		-- UI.Flags.Priority is updated automatically
-	end,
+-- ── INPUT at each size ─────────────────────────────────────────────────────
+local inputSection = SizeTab:CreateSection("Input — all sizes")
+
+inputSection:CreateInput({ Name = "Input sm", Flag = "in_sm", Size = "sm", Placeholder = "small..." })
+inputSection:CreateInput({ Name = "Input md", Flag = "in_md", Size = "md", Placeholder = "medium..." })
+inputSection:CreateInput({ Name = "Input lg", Flag = "in_lg", Size = "lg", Placeholder = "large..." })
+inputSection:CreateInput({ Name = "Input xl", Flag = "in_xl", Size = "xl", Placeholder = "extra large..." })
+
+-- ── KEYBIND at each size ───────────────────────────────────────────────────
+local keySection = SizeTab:CreateSection("Keybind — all sizes")
+
+keySection:CreateKeybind({ Name = "Keybind sm", Flag = "kb_sm", Size = "sm", Default = Enum.KeyCode.Q })
+keySection:CreateKeybind({ Name = "Keybind md", Flag = "kb_md", Size = "md", Default = Enum.KeyCode.E })
+keySection:CreateKeybind({ Name = "Keybind lg", Flag = "kb_lg", Size = "lg", Default = Enum.KeyCode.R })
+keySection:CreateKeybind({ Name = "Keybind xl", Flag = "kb_xl", Size = "xl", Default = Enum.KeyCode.F })
+
+-- ── LABEL styles + sizes ──────────────────────────────────────────────────
+local lblSection = SizeTab:CreateSection("Label — styles & sizes")
+
+lblSection:CreateLabel({ Text = "Label default sm", Style = "default", Size = "sm" })
+lblSection:CreateLabel({ Text = "Label header md", Style = "header", Size = "md" })
+lblSection:CreateLabel({ Text = "Label info lg", Style = "info", Size = "lg" })
+lblSection:CreateLabel({ Text = "Label success md", Style = "success", Size = "md" })
+lblSection:CreateLabel({ Text = "Label warn sm", Style = "warn", Size = "sm" })
+lblSection:CreateLabel({ Text = "Label error sm", Style = "error", Size = "sm" })
+lblSection:CreateLabel({ Text = "Label xl header", Style = "header", Size = "xl" })
+
+-- ── DIVIDER ───────────────────────────────────────────────────────────────
+lblSection:CreateDivider()
+lblSection:CreateDivider("with label")
+
+-- ── PARAGRAPH at each size ────────────────────────────────────────────────
+local paraSection = SizeTab:CreateSection("Paragraph — sizes")
+
+paraSection:CreateParagraph({
+	Title = "Small paragraph",
+	Body = "This is a small paragraph. Great for tooltips and hints.",
+	Size = "sm",
 })
-
--- LABEL  ──────────────────────────────────────────────────────────────────────
--- Pass a plain string for a simple muted hint line
-FarmSection:CreateLabel("Tip: use Range to limit target distance.")
-
--- Labels support styles: "default", "header", "info", "success", "warn", "error"
-local statusLbl = FarmSection:CreateLabel({
-	Text = "Status: idle",
-	Style = "info",
+paraSection:CreateParagraph({
+	Title = "Medium paragraph",
+	Body = "This is the default paragraph size. Use it for general descriptions inside your sections.",
+	Size = "md",
 })
-
--- You can update label text after creation:
--- statusLbl:SetText("Status: farming")
-
--- PARAGRAPH  ──────────────────────────────────────────────────────────────────
--- Title  bold header line (optional)
--- Body   multi-line wrapped text
-FarmSection:CreateParagraph({
-	Title = "How it works",
-	Body = "Auto Farm fires the remote every 0.2 seconds at the nearest enemy "
-		.. "within the chosen Range. Priority controls which enemy is picked "
-		.. "when multiple are in range.",
+paraSection:CreateParagraph({
+	Title = "Large paragraph",
+	Body = "This is a large paragraph. Easier to read on bigger screens or when used as help text.",
+	Size = "lg",
 })
 
 -- ============================================================================
--- TAB 2 — VISUAL
+-- TAB 2 — FONT SHOWCASE
+-- Every font alias on real components, not just text
 -- ============================================================================
-local VisualTab = Window:CreateTab("Visual")
+local FontTab = Window:CreateTab("Fonts")
 
-local VisualSection = VisualTab:CreateSection("ESP")
+local fontSection = FontTab:CreateSection("Per-component font override")
 
-VisualSection:CreateToggle({
-	Name = "ESP Enabled",
-	Flag = "ESP",
-	CurrentValue = false,
-	Callback = function(v)
-		-- your ESP logic here
-	end,
+-- BUTTON — each one uses a different font via opts.Font
+-- Works on: Button, Input, Label, Paragraph
+fontSection:CreateButton({
+	Name = "Gotham (default)",
+	Style = "accent",
+	Size = "md",
+	Font = "gotham",
+	Callback = function() end,
+})
+fontSection:CreateButton({
+	Name = "Gotham Bold",
+	Style = "accent",
+	Size = "md",
+	Font = "gothamBold",
+	Callback = function() end,
+})
+fontSection:CreateButton({
+	Name = "Arial",
+	Style = "accent",
+	Size = "md",
+	Font = "arial",
+	Callback = function() end,
+})
+fontSection:CreateButton({
+	Name = "Source Sans",
+	Style = "accent",
+	Size = "md",
+	Font = "sourceSans",
+	Callback = function() end,
+})
+fontSection:CreateButton({
+	Name = "Ubuntu",
+	Style = "accent",
+	Size = "md",
+	Font = "ubuntu",
+	Callback = function() end,
 })
 
--- COLOR PICKER  ───────────────────────────────────────────────────────────────
--- Default  starting Color3 value
--- Callback called with (Color3) whenever color changes
--- Click the swatch to expand/collapse the picker panel
-local colorObj = VisualSection:CreateColorPicker({
-	Name = "ESP Color",
-	Flag = "ESPColor",
-	Default = Color3.fromRGB(255, 80, 80),
-	Callback = function(col)
-		-- col is a Color3 — apply it to your ESP boxes
-		-- UI.Flags.ESPColor is also updated automatically
-	end,
+fontSection:CreateDivider("Input fonts")
+
+fontSection:CreateInput({
+	Name = "Gotham input",
+	Flag = "fi_gotham",
+	Font = "gotham",
+	Placeholder = "gotham font...",
+})
+fontSection:CreateInput({
+	Name = "Code input",
+	Flag = "fi_code",
+	Font = "code",
+	Placeholder = "monospace code...",
+})
+fontSection:CreateInput({
+	Name = "Serif input",
+	Flag = "fi_serif",
+	Font = "serif",
+	Placeholder = "serif style...",
 })
 
--- Read color back at any time:
--- local currentColor = colorObj:GetValue()
--- Set it programmatically:
--- colorObj:SetValue(Color3.fromRGB(0, 200, 255))
+fontSection:CreateDivider("Label fonts")
 
-VisualSection:CreateSlider({
-	Name = "ESP Box Width",
-	Flag = "ESPWidth",
-	Min = 1,
-	Max = 5,
-	CurrentValue = 2,
+fontSection:CreateLabel({ Text = "Label in Gotham (default)", Font = "gotham", Style = "header", Size = "md" })
+fontSection:CreateLabel({ Text = "Label in Arial", Font = "arial", Style = "info", Size = "md" })
+fontSection:CreateLabel({ Text = "Label in Code (mono)", Font = "code", Style = "default", Size = "md" })
+fontSection:CreateLabel({ Text = "Label in Serif", Font = "serif", Style = "default", Size = "md" })
+fontSection:CreateLabel({ Text = "Label in Ubuntu", Font = "ubuntu", Style = "success", Size = "md" })
+
+fontSection:CreateDivider("Paragraph fonts")
+
+fontSection:CreateParagraph({
+	Title = "Paragraph in Code font",
+	Body = "loadstring(game:HttpGet(url))()\n-- monospace looks great for code snippets",
+	Font = "code",
+	Size = "sm",
 })
-
-VisualSection:CreateDivider("Chams")
-
-VisualSection:CreateToggle({
-	Name = "Chams",
-	Flag = "Chams",
-	CurrentValue = false,
-})
-
-VisualSection:CreateColorPicker({
-	Name = "Chams Color",
-	Flag = "ChamsColor",
-	Default = Color3.fromRGB(100, 180, 255),
+fontSection:CreateParagraph({
+	Title = "Paragraph in Serif font",
+	Body = "This body uses a serif typeface. Great for longer help text or notes that need a softer reading feel.",
+	Font = "serif",
+	Size = "sm",
 })
 
 -- ============================================================================
--- TAB 3 — SETTINGS
+-- TAB 3 — SETTINGS  (practical use with real flags)
 -- ============================================================================
 local SettingsTab = Window:CreateTab("Settings")
 
--- ── SECTION: Keybinds ───────────────────────────────────────────────────────
-local KeySection = SettingsTab:CreateSection("Keybinds")
+local appearSection = SettingsTab:CreateSection("Appearance")
 
--- KEYBIND  ────────────────────────────────────────────────────────────────────
--- Default   starting Enum.KeyCode
--- Callback  called with (KeyCode) when key is changed
--- OnFire    called every time the bound key is pressed in-game
--- Click the button, then press any key to rebind (Escape cancels)
-FarmSection:CreateKeybind({
-	Name = "Toggle UI",
-	Flag = "ToggleKey",
-	Description = "Press to show/hide",
-	Default = Enum.KeyCode.RightControl,
-	Callback = function(kc)
-		UI:Notify("UI key set to: " .. tostring(kc.Name), 2, "info")
-	end,
-	OnFire = function()
-		-- fires every time the key is pressed
+appearSection:CreateDropdown({
+	Name = "Window Size",
+	Flag = "WindowSize",
+	Options = { "sm", "md", "lg", "xl" },
+	Default = "md",
+	Size = "md",
+	Callback = function(v)
+		-- NOTE: SetSize + SetFont must be called BEFORE CreateWindow.
+		-- At runtime, use them to inform the user they need to reload.
+		UI:Notify("Reload script to apply size: " .. v, 3, "warn")
 	end,
 })
 
-FarmSection:CreateKeybind({
-	Name = "Toggle Farm",
-	Flag = "FarmKey",
-	Default = Enum.KeyCode.F,
-	OnFire = function()
-		local next = not UI.Flags.AutoFarm
-		UI.Flags.AutoFarm = next
-		toggleObj:SetValue(next)
-		UI:Notify(next and "Farm started" or "Farm stopped", 2, next and "success" or "warn")
+appearSection:CreateDropdown({
+	Name = "Font",
+	Flag = "FontChoice",
+	Options = { "gotham", "gothamBold", "arial", "roboto", "code", "serif", "ubuntu", "sourceSans" },
+	Default = "gotham",
+	Size = "md",
+	Callback = function(v)
+		UI:Notify("Reload script to apply font: " .. v, 3, "warn")
 	end,
 })
 
--- ── SECTION: Appearance ─────────────────────────────────────────────────────
-local AppearSection = SettingsTab:CreateSection("Appearance")
-
-AppearSection:CreateDropdown({
+appearSection:CreateDropdown({
 	Name = "Theme",
 	Flag = "Theme",
 	Options = { "light", "dark", "ocean" },
 	Default = "light",
+	Size = "md",
 	Callback = function(v)
 		UI:SetTheme(v)
 		UI:Notify("Theme: " .. v, 2, "info")
 	end,
 })
 
--- ── SECTION: Config ─────────────────────────────────────────────────────────
-local ConfigSection = SettingsTab:CreateSection("Config")
+local configSection = SettingsTab:CreateSection("Config")
 
-ConfigSection:CreateParagraph({
-	Title = "Auto-save",
-	Body = "Configs are saved as JSON files in your executor's workspace folder. "
-		.. "Load them on startup to restore your last session.",
-})
-
--- INPUT  ──────────────────────────────────────────────────────────────────────
--- Default       starting text
--- Placeholder   greyed hint text when empty
--- ClearOnFocus  clear box when you click it (default true)
--- Callback      called with (text, pressedEnter) on focus lost
-local inputObj = ConfigSection:CreateInput({
+configSection:CreateInput({
 	Name = "Config Name",
 	Flag = "ConfigName",
 	Default = "myconfig",
 	Placeholder = "e.g. myconfig",
+	Size = "md",
 	ClearOnFocus = false,
-	Callback = function(text, entered)
-		-- text  = current value
-		-- entered = true if user pressed Enter to confirm
-	end,
 })
 
--- BUTTON — styles: "accent" (indigo), "danger" (red), or default (dark)
-ConfigSection:CreateButton({
+configSection:CreateButton({
 	Name = "Save Config",
 	Style = "accent",
+	Size = "md",
 	Callback = function()
-		local name = UI.Flags.ConfigName or "myconfig"
-		UI:SaveConfig(name)
-		UI:Notify("Saved: " .. name .. ".json", 3, "success")
+		UI:SaveConfig(UI.Flags.ConfigName or "myconfig")
+		UI:Notify("Saved!", 2, "success")
 	end,
 })
-
-ConfigSection:CreateButton({
+configSection:CreateButton({
 	Name = "Load Config",
+	Style = "default",
+	Size = "md",
 	Callback = function()
-		local name = UI.Flags.ConfigName or "myconfig"
-		UI:LoadConfig(name)
-		UI:Notify("Loaded: " .. name .. ".json", 3, "info")
+		UI:LoadConfig(UI.Flags.ConfigName or "myconfig")
+		UI:Notify("Loaded!", 2, "info")
 	end,
 })
-
-ConfigSection:CreateButton({
+configSection:CreateButton({
 	Name = "Reset Flags",
 	Style = "danger",
+	Size = "sm",
 	Callback = function()
 		UI.Flags = {}
 		UI:Notify("All flags cleared", 2, "warn")
@@ -298,122 +429,36 @@ ConfigSection:CreateButton({
 	end,
 })
 
--- ── SECTION: Info ───────────────────────────────────────────────────────────
-local InfoSection = SettingsTab:CreateSection("Info")
-
-InfoSection:CreateLabel({ Text = "FlatGrayUI  —  complete component guide", Style = "header" })
-InfoSection:CreateDivider()
-InfoSection:CreateLabel({ Text = "Toggle        on/off switch with flag", Style = "default" })
-InfoSection:CreateLabel({ Text = "Slider         numeric range picker", Style = "default" })
-InfoSection:CreateLabel({ Text = "Dropdown    pick from a list", Style = "default" })
-InfoSection:CreateLabel({ Text = "Button          click action", Style = "default" })
-InfoSection:CreateLabel({ Text = "Input            free-text entry", Style = "default" })
-InfoSection:CreateLabel({ Text = "Keybind      bind & fire a key", Style = "default" })
-InfoSection:CreateLabel({ Text = "ColorPicker  HSV color selector", Style = "default" })
-InfoSection:CreateLabel({ Text = "Label           styled text line", Style = "default" })
-InfoSection:CreateLabel({ Text = "Paragraph    wrapped text block", Style = "default" })
-InfoSection:CreateLabel({ Text = "Divider        section separator", Style = "default" })
-InfoSection:CreateDivider()
-InfoSection:CreateLabel({ Text = "Themes: light  /  dark  /  ocean", Style = "info" })
-
 -- ============================================================================
--- NOTIFY EXAMPLES  (all 4 kinds)
+-- PROGRAMMATIC API REFERENCE
 -- ============================================================================
--- UI:Notify(text, duration_seconds, kind)
--- kind: "info" | "success" | "warn" | "error"
+
+--[[ GLOBAL SETUP (before CreateWindow):
+
+    UI:SetSize("sm"|"md"|"lg"|"xl")
+    UI:SetFont(baseFont, boldFont?)   -- string alias or Enum.Font
+    UI:SetTheme("light"|"dark"|"ocean")
+
+    COMPONENT opts.Size   = "sm"|"md"|"lg"|"xl"   -- overrides global for that one row
+    COMPONENT opts.Font   = "code"|"serif"|...     -- overrides font for Button/Input/Label/Paragraph
+
+    WINDOW:
+        Window:SetStatus(text, "ok"|"running"|"error"|"idle")
+
+    NOTIFY:
+        UI:Notify(text, duration, "info"|"success"|"warn"|"error")
+
+    COMPONENT RETURN HANDLES:
+        toggle:SetValue(bool)          toggle:GetValue() → bool
+        slider:SetValue(number)        slider:GetValue() → number
+        dropdown:SetValue(string)      dropdown:GetValue() → string
+        colorPicker:SetValue(Color3)   colorPicker:GetValue() → Color3
+        input:SetValue(string)         input:GetValue() → string
+        keybind:SetValue(Enum.KeyCode) keybind:GetValue() → KeyCode
+        label:SetText(string)          label:GetText() → string
+        paragraph:SetBody(string)
+--]]
 
 task.delay(1, function()
-	UI:Notify("UI loaded successfully!", 3, "success")
-end)
-
--- ============================================================================
--- PROGRAMMATIC CONTROL EXAMPLES
--- ============================================================================
-
--- Read any flag value at any time:
---   UI.Flags.AutoFarm      → boolean
---   UI.Flags.Range         → number
---   UI.Flags.EnemyType     → string
---   UI.Flags.ESPColor      → Color3
---   UI.Flags.ToggleKey     → Enum.KeyCode
-
--- Force-set a component's value from code:
---   toggleObj:SetValue(true)
---   sliderObj:SetValue(150)
---   dropObj:SetValue("MagmaEnemies")
---   colorObj:SetValue(Color3.fromRGB(0,255,128))
---   inputObj:SetValue("newname")
-
--- Update the status bar:
---   Window:SetStatus("Attacking", "running")
---   Window:SetStatus("Error!", "error")
---   Window:SetStatus("Ready", "ok")
---   Window:SetStatus("Idle", "idle")
-
--- Switch theme at runtime:
---   UI:SetTheme("dark")
---   UI:SetTheme("ocean")
---   UI:SetTheme("light")
-
--- ============================================================================
--- GAME LOGIC  (unchanged from original)
--- ============================================================================
-local remote = game.ReplicatedStorage:WaitForChild("FireMagicProjectile13")
-
-local function getTarget()
-	local player = game.Players.LocalPlayer
-	local char = player.Character
-	local root = char and char:FindFirstChild("HumanoidRootPart")
-	if not root then
-		return nil
-	end
-
-	local best, bestScore = nil, math.huge
-	for _, folder in pairs({
-		workspace:FindFirstChild(UI.Flags.EnemyType or "RockEnemies"),
-	}) do
-		if not folder then
-			continue
-		end
-		for _, npc in pairs(folder:GetChildren()) do
-			local hum = npc:FindFirstChildOfClass("Humanoid")
-			local hrp = npc:FindFirstChild("HumanoidRootPart")
-			if not (hum and hrp and hum.Health > 0) then
-				continue
-			end
-			local dist = (hrp.Position - root.Position).Magnitude
-			if UI.Flags.Range and dist > UI.Flags.Range then
-				continue
-			end
-			local score = (UI.Flags.Priority == "Lowest HP") and hum.Health or dist
-			if score < bestScore then
-				bestScore = score
-				best = hrp
-			end
-		end
-	end
-	return best
-end
-
-task.spawn(function()
-	while task.wait(0.2) do
-		local char = game.Players.LocalPlayer.Character
-		local root = char and char:FindFirstChild("HumanoidRootPart")
-		if not root then
-			continue
-		end
-
-		local target = getTarget()
-		if not target then
-			continue
-		end
-
-		if UI.Flags.AutoFarm then
-			remote:FireServer(target.Position)
-		end
-
-		if UI.Flags.AutoJump then
-			root.CFrame = target.CFrame * CFrame.new(0, 3, 0)
-		end
-	end
+	UI:Notify("UI loaded! Try the Sizes and Fonts tabs.", 4, "success")
 end)
