@@ -154,8 +154,9 @@ function UI:CreateWindow(title)
 
 		function tab:CreateSection(name)
 			local section = Instance.new("Frame", page)
-			section.AutomaticSize = Enum.AutomaticSize.Y
 			section.Size = UDim2.new(1, -6, 0, 0)
+			section.AutomaticSize = Enum.AutomaticSize.Y
+			section.ClipsDescendants = true -- ✅ prevents overflow glitch
 			section.BackgroundColor3 = Color3.fromRGB(35, 35, 40)
 			Instance.new("UICorner", section)
 
@@ -167,6 +168,7 @@ function UI:CreateWindow(title)
 
 			local holder = Instance.new("Frame", section)
 			holder.Position = UDim2.new(0, 0, 0, 20)
+			holder.Size = UDim2.new(1, 0, 0, 0) -- ✅ FIX
 			holder.AutomaticSize = Enum.AutomaticSize.Y
 			holder.BackgroundTransparency = 1
 
