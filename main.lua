@@ -172,7 +172,7 @@ function UI:CreateWindow(title, subtitle)
 	main.BackgroundColor3 = C.Base
 	main.BorderSizePixel = 0
 	main.Active = true
-	main.Draggable = true
+	main.Draggable = false -- must be false; true steals mouse drag from sliders
 	main.ClipsDescendants = true
 	main.ZIndex = 1
 	rnd(main, 10)
@@ -302,6 +302,38 @@ function UI:CreateWindow(title, subtitle)
 			gui.Enabled = not gui.Enabled
 		end
 	end)
+
+	-- manual drag on titlebar only — Draggable=true on main would steal slider drags
+	do
+		local dragging = false
+		local dragStart, startPos
+
+		tb.InputBegan:Connect(function(inp)
+			if inp.UserInputType == Enum.UserInputType.MouseButton1 then
+				dragging = true
+				dragStart = inp.Position
+				startPos = main.Position
+			end
+		end)
+
+		UIS.InputEnded:Connect(function(inp)
+			if inp.UserInputType == Enum.UserInputType.MouseButton1 then
+				dragging = false
+			end
+		end)
+
+		UIS.InputChanged:Connect(function(inp)
+			if dragging and inp.UserInputType == Enum.UserInputType.MouseMovement then
+				local delta = inp.Position - dragStart
+				main.Position = UDim2.new(
+					startPos.X.Scale,
+					startPos.X.Offset + delta.X,
+					startPos.Y.Scale,
+					startPos.Y.Offset + delta.Y
+				)
+			end
+		end)
+	end
 
 	---------------------------------------------------------------------------
 	-- SIDEBAR  (z=2) — NO UIListLayout; tab buttons positioned manually
