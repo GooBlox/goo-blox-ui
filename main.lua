@@ -710,18 +710,14 @@ function UI:CreateWindow(title, subtitle)
 				local function update()
 					UI.Flags[opts.Flag] = state
 					tw(pill, { BackgroundColor3 = state and C.Accent or C.Panel }, 0.15)
-					tw(
-						thumb,
-						{
-							Position = UDim2.new(
-								0,
-								state and (SZ.pillW - SZ.thumbSz - s(3)) or s(3),
-								0,
-								math.floor((SZ.pillH - SZ.thumbSz) / 2)
-							),
-						},
-						0.15
-					)
+					tw(thumb, {
+						Position = UDim2.new(
+							0,
+							state and (SZ.pillW - SZ.thumbSz - s(3)) or s(3),
+							0,
+							math.floor((SZ.pillH - SZ.thumbSz) / 2)
+						),
+					}, 0.15)
 					if opts.Callback then
 						opts.Callback(state)
 					end
@@ -1287,24 +1283,20 @@ function UI:CreateWindow(title, subtitle)
 				btn.MouseButton1Down:Connect(function()
 					tw(
 						btn,
-						{ Size = UDim2.new(0, RW - s(28), 0, bh - s(2)), Position = UDim2.new(
-							0,
-							s(14),
-							0,
-							math.floor((rh - bh) / 2) + s(1)
-						) },
+						{
+							Size = UDim2.new(0, RW - s(28), 0, bh - s(2)),
+							Position = UDim2.new(0, s(14), 0, math.floor((rh - bh) / 2) + s(1)),
+						},
 						0.06
 					)
 				end)
 				btn.MouseButton1Up:Connect(function()
 					tw(
 						btn,
-						{ Size = UDim2.new(0, RW - s(24), 0, bh), Position = UDim2.new(
-							0,
-							s(12),
-							0,
-							math.floor((rh - bh) / 2)
-						) },
+						{
+							Size = UDim2.new(0, RW - s(24), 0, bh),
+							Position = UDim2.new(0, s(12), 0, math.floor((rh - bh) / 2)),
+						},
 						0.06
 					)
 				end)
