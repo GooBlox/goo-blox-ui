@@ -1281,24 +1281,16 @@ function UI:CreateWindow(title, subtitle)
 				end
 
 				btn.MouseButton1Down:Connect(function()
-					tw(
-						btn,
-						{
-							Size = UDim2.new(0, RW - s(28), 0, bh - s(2)),
-							Position = UDim2.new(0, s(14), 0, math.floor((rh - bh) / 2) + s(1)),
-						},
-						0.06
-					)
+					tw(btn, {
+						Size = UDim2.new(0, RW - s(28), 0, bh - s(2)),
+						Position = UDim2.new(0, s(14), 0, math.floor((rh - bh) / 2) + s(1)),
+					}, 0.06)
 				end)
 				btn.MouseButton1Up:Connect(function()
-					tw(
-						btn,
-						{
-							Size = UDim2.new(0, RW - s(24), 0, bh),
-							Position = UDim2.new(0, s(12), 0, math.floor((rh - bh) / 2)),
-						},
-						0.06
-					)
+					tw(btn, {
+						Size = UDim2.new(0, RW - s(24), 0, bh),
+						Position = UDim2.new(0, s(12), 0, math.floor((rh - bh) / 2)),
+					}, 0.06)
 				end)
 				btn.MouseButton1Click:Connect(function()
 					if opts.Callback then
