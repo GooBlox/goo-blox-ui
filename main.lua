@@ -450,13 +450,20 @@ end
 -- ─── NOTIFY ───────────────────────────────────────────────────────────────────
 local _notifStack = {}
 local function _restack()
+	-- Stack from bottom of screen upward, newest notification at bottom
 	local gap = s(6)
-	local y = -(s(10))
+	local y = -(s(12))
 	for i = #_notifStack, 1, -1 do
 		local n = _notifStack[i]
 		if n and n.Parent then
 			y = y - SZ.notifH - gap
-			tw(n, { Position = UDim2.new(1, -(SZ.notifW + s(12)), 1, y) }, 0.2)
+			local targetY = y
+			-- Use unique tween per notif (cancel any competing tween by using same property)
+			task.defer(function()
+				if n and n.Parent then
+					tw(n, { Position = UDim2.new(1, -(SZ.notifW + s(12)), 1, targetY) }, 0.22)
+				end
+			end)
 		else
 			table.remove(_notifStack, i)
 		end
@@ -469,20 +476,40 @@ function UI:Notify(text, duration, kind)
 	if not gui then
 		return
 	end
-	local kinds = {
-		info = { bg = Color3.fromRGB(32, 38, 65), bar = C.Accent, tc = Color3.fromRGB(175, 200, 255) },
-		success = { bg = Color3.fromRGB(22, 48, 28), bar = Color3.fromRGB(80, 175, 80), tc = Color3.fromRGB(
-			155,
-			228,
-			155
-		) },
-		warn = { bg = Color3.fromRGB(52, 40, 18), bar = Color3.fromRGB(210, 150, 40), tc = Color3.fromRGB(238, 195, 98) },
-		error = { bg = Color3.fromRGB(58, 20, 20), bar = Color3.fromRGB(220, 70, 70), tc = Color3.fromRGB(
-			255,
-			155,
-			155
-		) },
-	}
+
+	-- Detect if current theme is light (Base luminance > 0.5) to pick readable colours
+	local isLight = (C.Base.R + C.Base.G + C.Base.B) > 1.5 -- light themes sum near 3.0
+
+	local kinds
+	if isLight then
+		-- Light theme: pastel backgrounds with dark text
+		kinds = {
+			info = { bg = Color3.fromRGB(225, 232, 255), bar = C.Accent, tc = Color3.fromRGB(40, 50, 150) },
+			success = { bg = Color3.fromRGB(220, 245, 210), bar = Color3.fromRGB(60, 145, 40), tc = Color3.fromRGB(
+				30,
+				100,
+				20
+			) },
+			warn = { bg = Color3.fromRGB(255, 240, 205), bar = Color3.fromRGB(185, 120, 20), tc = Color3.fromRGB(
+				120,
+				75,
+				10
+			) },
+			error = { bg = Color3.fromRGB(255, 220, 218), bar = Color3.fromRGB(210, 60, 55), tc = Color3.fromRGB(
+				150,
+				30,
+				25
+			) },
+		}
+	else
+		-- Dark theme: use Surface as bg so it always matches current theme card
+		kinds = {
+			info = { bg = C.Surface, bar = C.Accent, tc = C.Text },
+			success = { bg = C.Surface, bar = Color3.fromRGB(80, 175, 80), tc = Color3.fromRGB(155, 228, 155) },
+			warn = { bg = C.Surface, bar = Color3.fromRGB(210, 150, 40), tc = Color3.fromRGB(238, 195, 98) },
+			error = { bg = C.Surface, bar = Color3.fromRGB(220, 70, 70), tc = Color3.fromRGB(255, 155, 155) },
+		}
+	end
 	local k = kinds[kind] or kinds.info
 	local nW, nH = SZ.notifW, SZ.notifH
 	local n = Instance.new("Frame", gui)
@@ -1138,6 +1165,17 @@ function UI:CreateWindow(title, subtitleOrOpts)
 						return
 					end
 					open = true
+					-- Refresh item colors to current theme (handles post-SetTheme opens)
+					listOuter.BackgroundColor3 = C.Card
+					for _, ch in pairs(list:GetChildren()) do
+						if ch:IsA("TextButton") then
+							ch.BackgroundColor3 = C.Card
+							local tl = ch:FindFirstChildOfClass("TextLabel")
+							if tl then
+								tl.TextColor3 = tl.Text == selected and C.Accent or C.Text
+							end
+						end
+					end
 					local ap = selBtn.AbsolutePosition
 					local as = selBtn.AbsoluteSize
 					local lh = calcH(#opts.Options)
@@ -1965,123 +2003,124 @@ function UI:CreateWindow(title, subtitleOrOpts)
 		return tab
 	end -- CreateTab
 
-	-- ── BUILT-IN SETTINGS TAB ─────────────────────────────────────────────────
-	if showSettings then
-		local SettTab = window:CreateTab("Settings")
-		local ThemeSec = SettTab:CreateSection("Theme")
-
-		-- Theme buttons — group by light/dark pairs
-		local themeGroups = {
-			{ "Default", "light", "dark" },
-			{ "Ocean", nil, "ocean" },
-			{ "Amber", "amber-light", "amber-dark" },
-			{ "Stone", "stone-light", "stone-dark" },
-			{ "Warm", "warm-light", "warm-dark" },
-			{ "Blue", "blue-light", "blue-dark" },
-		}
-		for _, g in ipairs(themeGroups) do
-			local label, light, dark2 = g[1], g[2], g[3]
-			if light and dark2 then
-				ThemeSec:CreateButton({
-					Name = "☀️ " .. label .. " Light",
-					Callback = function()
-						UI:SetTheme(light)
-						UI:Notify("Theme: " .. light, 2, "info")
-					end,
-				})
-				ThemeSec:CreateButton({
-					Name = "🌑 " .. label .. " Dark",
-					Callback = function()
-						UI:SetTheme(dark2)
-						UI:Notify("Theme: " .. dark2, 2, "info")
-					end,
-				})
-			else
-				-- Ocean has no light variant
-				ThemeSec:CreateButton({
-					Name = "🌊 " .. label,
-					Callback = function()
-						UI:SetTheme(dark2)
-						UI:Notify("Theme: " .. dark2, 2, "info")
-					end,
-				})
-			end
-			ThemeSec:CreateDivider()
-		end
-
-		local SizeSec = SettTab:CreateSection("UI Size")
-		SizeSec:CreateParagraph({ Title = "Note", Content = "Size changes apply on next script run." })
-		for _, p in ipairs({ "sm", "md", "lg", "xl" }) do
-			local labels = { sm = "Small", md = "Medium (Default)", lg = "Large", xl = "Extra Large" }
-			SizeSec:CreateButton({
-				Name = labels[p],
-				Callback = function()
-					UI:SetSize(p)
-					UI:Notify("Size: " .. p .. " — re-run to fully apply", 3, "warn")
-				end,
-			})
-		end
-
-		local FontSec = SettTab:CreateSection("Font")
-		local fonts = {
-			{ "Gotham", "gotham", "gothamSemibold" },
-			{ "Roboto", "roboto", "gothamSemibold" },
-			{ "Ubuntu", "ubuntu", "gothamSemibold" },
-			{ "Source Sans", "sourceSans", "gothamSemibold" },
-		}
-		for _, f in ipairs(fonts) do
-			FontSec:CreateButton({
-				Name = f[1],
-				Callback = function()
-					UI:SetFont(f[2], f[3])
-					UI:Notify("Font: " .. f[1], 2, "info")
-				end,
-			})
-		end
-
-		if autoSaveName then
-			local SaveSec = SettTab:CreateSection("Config")
-			SaveSec:CreateButton({
-				Name = "💾 Save Config",
-				Style = "accent",
-				Callback = function()
-					UI:SaveConfig(autoSaveName)
-					UI:Notify("Config saved!", 2, "success")
-				end,
-			})
-			SaveSec:CreateButton({
-				Name = "📂 Load Config",
-				Callback = function()
-					UI:LoadConfig(autoSaveName)
-					UI:Notify("Config loaded!", 2, "success")
-				end,
-			})
-			SaveSec:CreateParagraph({
-				Title = "Auto Save",
-				Content = "Config auto-saves on every toggle/slider/dropdown change.",
-			})
-		end
-
-		local InfoSec = SettTab:CreateSection("About")
-		InfoSec:CreateParagraph({
-			Title = "GooBlox UI v" .. UI.Version,
-			Content = "RightCtrl to toggle visibility.\nTheme, size, and config settings above.",
-		})
-		InfoSec:CreateButton({
-			Name = "Unload",
-			Style = "danger",
-			Callback = function()
-				UI:Notify("Unloading...", 2, "warn")
-				task.wait(0.4)
-				gui:Destroy()
-			end,
-		})
-	end
-
 	-- Auto-load config on start if autoSaveName set
 	if autoSaveName then
 		task.defer(function()
 			UI:LoadConfig(autoSaveName)
+		end)
+	end
+
+	-- ── BUILT-IN SETTINGS TAB ─────────────────────────────────────────────────
+	-- Deferred so it always appears AFTER all game tabs the caller creates
+	if showSettings then
+		task.defer(function()
+			local SettTab = window:CreateTab("Settings")
+			local ThemeSec = SettTab:CreateSection("Theme")
+
+			local themeGroups = {
+				{ "Default", "light", "dark" },
+				{ "Ocean", nil, "ocean" },
+				{ "Amber", "amber-light", "amber-dark" },
+				{ "Stone", "stone-light", "stone-dark" },
+				{ "Warm", "warm-light", "warm-dark" },
+				{ "Blue", "blue-light", "blue-dark" },
+			}
+			for _, g in ipairs(themeGroups) do
+				local label, light, dark2 = g[1], g[2], g[3]
+				if light and dark2 then
+					ThemeSec:CreateButton({
+						Name = "☀️ " .. label .. " Light",
+						Callback = function()
+							UI:SetTheme(light)
+							UI:Notify("Theme: " .. light, 2, "info")
+						end,
+					})
+					ThemeSec:CreateButton({
+						Name = "🌑 " .. label .. " Dark",
+						Callback = function()
+							UI:SetTheme(dark2)
+							UI:Notify("Theme: " .. dark2, 2, "info")
+						end,
+					})
+				else
+					ThemeSec:CreateButton({
+						Name = "🌊 " .. label,
+						Callback = function()
+							UI:SetTheme(dark2)
+							UI:Notify("Theme: " .. dark2, 2, "info")
+						end,
+					})
+				end
+				ThemeSec:CreateDivider()
+			end
+
+			local SizeSec = SettTab:CreateSection("UI Size")
+			SizeSec:CreateParagraph({ Title = "Note", Content = "Size changes apply on next script run." })
+			for _, p in ipairs({ "sm", "md", "lg", "xl" }) do
+				local labels = { sm = "Small", md = "Medium (Default)", lg = "Large", xl = "Extra Large" }
+				SizeSec:CreateButton({
+					Name = labels[p],
+					Callback = function()
+						UI:SetSize(p)
+						UI:Notify("Size: " .. p .. " — re-run to fully apply", 3, "warn")
+					end,
+				})
+			end
+
+			local FontSec = SettTab:CreateSection("Font")
+			local fonts = {
+				{ "Gotham", "gotham", "gothamSemibold" },
+				{ "Roboto", "roboto", "gothamSemibold" },
+				{ "Ubuntu", "ubuntu", "gothamSemibold" },
+				{ "Source Sans", "sourceSans", "gothamSemibold" },
+			}
+			for _, f in ipairs(fonts) do
+				FontSec:CreateButton({
+					Name = f[1],
+					Callback = function()
+						UI:SetFont(f[2], f[3])
+						UI:Notify("Font: " .. f[1], 2, "info")
+					end,
+				})
+			end
+
+			if autoSaveName then
+				local SaveSec = SettTab:CreateSection("Config")
+				SaveSec:CreateButton({
+					Name = "💾 Save Config",
+					Style = "accent",
+					Callback = function()
+						UI:SaveConfig(autoSaveName)
+						UI:Notify("Config saved!", 2, "success")
+					end,
+				})
+				SaveSec:CreateButton({
+					Name = "📂 Load Config",
+					Callback = function()
+						UI:LoadConfig(autoSaveName)
+						UI:Notify("Config loaded!", 2, "success")
+					end,
+				})
+				SaveSec:CreateParagraph({
+					Title = "Auto Save",
+					Content = "Config auto-saves on every toggle/slider/dropdown change.",
+				})
+			end
+
+			local InfoSec = SettTab:CreateSection("About")
+			InfoSec:CreateParagraph({
+				Title = "GooBlox UI v" .. UI.Version,
+				Content = "RightCtrl to toggle visibility.\nTheme, size, and config settings above.",
+			})
+			InfoSec:CreateButton({
+				Name = "Unload",
+				Style = "danger",
+				Callback = function()
+					UI:Notify("Unloading...", 2, "warn")
+					task.wait(0.4)
+					gui:Destroy()
+				end,
+			})
 		end)
 	end
 
