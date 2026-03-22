@@ -608,12 +608,15 @@ function UI:SaveConfig(name)
 			enc[k] = e
 		end
 	end
-	-- also save theme + size
 	enc["__theme"] = _currentThemeName
 	enc["__scale"] = _scale
-	pcall(function()
+	local ok, err = pcall(function()
 		writefile((name or "GooBloxUI") .. ".json", HS:JSONEncode(enc))
 	end)
+	if not ok then
+		warn("[GooBloxUI] SaveConfig failed: " .. tostring(err))
+	end
+	return ok
 end
 
 function UI:LoadConfig(name)
@@ -801,6 +804,45 @@ function UI:CreateWindow(title, subtitleOrOpts)
 	local sbTxt = mklabel(sb, "Ready", s(22), 0, W - s(110), SBH, "Text", SZ.txtXS, false, 12)
 	local sbVer = mklabel(sb, subtitle or "v2.0", W - s(96), 0, s(90), SBH, "Muted", SZ.txtXS, false, 12)
 	sbVer.TextXAlignment = Enum.TextXAlignment.Right
+
+	-- Component registry: flag → {obj with SetValue, triggerCallback}
+	-- Used by LoadConfig to restore UI state AND fire callbacks (so getgenv() vars update)
+	local _components = {}
+
+	-- Restore UI state from a pre-loaded data table (used by doLoad to support memory-only storage)
+	function UI:RestoreFromData(data)
+		if not data or type(data) ~= "table" then
+			return
+		end
+		for k, v in pairs(data) do
+			if k == "__theme" then
+				UI:SetTheme(v)
+			elseif k == "__scale" then
+				_scale = v
+				buildSZ()
+			elseif k ~= "SF_PRIORITY" and k ~= "SF_PITY_OVERRIDES" then
+				UI.Flags[k] = decodeV(v)
+				if _components[k] then
+					pcall(function()
+						_components[k](decodeV(v))
+					end)
+				end
+			end
+		end
+	end
+
+	function UI:LoadConfig(name)
+		local ok, data = pcall(function()
+			if not isfile((name or "GooBloxUI") .. ".json") then
+				return nil
+			end
+			return HS:JSONDecode(readfile((name or "GooBloxUI") .. ".json"))
+		end)
+		if not ok or not data then
+			return
+		end
+		UI:RestoreFromData(data)
+	end
 
 	-- Window API
 	local window = {}
@@ -1004,6 +1046,23 @@ function UI:CreateWindow(title, subtitleOrOpts)
 					state = not state
 					refresh()
 				end)
+				-- Register for LoadConfig restore
+				if opts.Flag then
+					_components[opts.Flag] = function(v)
+						state = v == true
+						UI.Flags[opts.Flag] = state
+						pill.BackgroundColor3 = state and C.Accent or C.Panel
+						thumb.Position = UDim2.new(
+							0,
+							state and (SZ.pillW - SZ.thumbSz - s(3)) or s(3),
+							0,
+							math.floor((SZ.pillH - SZ.thumbSz) / 2)
+						)
+						if opts.Callback then
+							opts.Callback(state)
+						end
+					end
+				end
 				return {
 					SetValue = function(_, v)
 						state = v
@@ -1087,6 +1146,12 @@ function UI:CreateWindow(title, subtitleOrOpts)
 						)
 					end
 				end)
+				-- Register for LoadConfig restore
+				if opts.Flag then
+					_components[opts.Flag] = function(v)
+						upd(tonumber(v) or val)
+					end
+				end
 				return {
 					SetValue = function(_, v)
 						upd(v)
@@ -1235,6 +1300,19 @@ function UI:CreateWindow(title, subtitleOrOpts)
 				if opts.Options then
 					for _, opt in ipairs(opts.Options) do
 						addOpt(opt)
+					end
+				end
+				-- Register for LoadConfig restore
+				if opts.Flag then
+					_components[opts.Flag] = function(v)
+						if type(v) == "string" then
+							selected = v
+							selLbl.Text = v
+							UI.Flags[opts.Flag] = v
+							if opts.Callback then
+								opts.Callback(v)
+							end
+						end
 					end
 				end
 				return {
@@ -1441,6 +1519,34 @@ function UI:CreateWindow(title, subtitleOrOpts)
 					tw(chev, { Rotation = collapsed and 0 or 180 }, 0.15)
 					tw(listPanel, { Size = UDim2.new(0, RW, 0, collapsed and 0 or totalH) }, 0.18)
 				end)
+				-- Register for LoadConfig restore
+				-- Saved as a set-table {key=true}, decoded back as table
+				if opts.Flag then
+					_components[opts.Flag] = function(v)
+						for k in pairs(selected) do
+							selected[k] = nil
+						end
+						if type(v) == "table" then
+							-- v may be decoded as array of strings or set {key=true}
+							for k, val in pairs(v) do
+								if type(k) == "string" and val == true then
+									selected[k] = true
+								elseif type(k) == "number" and type(val) == "string" then
+									selected[val] = true
+								end
+							end
+						end
+						rebuildColors()
+						refreshCnt()
+						if opts.Callback then
+							local t = {}
+							for k in pairs(selected) do
+								table.insert(t, k)
+							end
+							opts.Callback(t)
+						end
+					end
+				end
 				return {
 					GetSelected = function(_)
 						local t = {}
@@ -2003,9 +2109,9 @@ function UI:CreateWindow(title, subtitleOrOpts)
 		return tab
 	end -- CreateTab
 
-	-- Auto-load config on start if autoSaveName set
+	-- Auto-load config on start — delayed so ALL tabs/sections/components finish registering first
 	if autoSaveName then
-		task.defer(function()
+		task.delay(0.5, function()
 			UI:LoadConfig(autoSaveName)
 		end)
 	end
