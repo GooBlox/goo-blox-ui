@@ -1,20 +1,20 @@
 --[[
-	╔══════════════════════════════════════════════════════════════╗
-	║  FlatGrayUI  —  Complete UI Library                          ║
-	║                                                              ║
-	║  SIZE SYSTEM   sm · md (default) · lg · xl                   ║
-	║  FONT SUPPORT  any Enum.Font, or use built-in aliases        ║
-	║                "gotham" "gothamBold" "gothamSemibold"        ║
-	║                "arial"  "roboto"     "code" "serif"          ║
-	║                                                              ║
-	║  COMPONENTS    Toggle · Slider · Dropdown · Button · Input   ║
-	║                Keybind · ColorPicker · Label · Paragraph     ║
-	║                Divider                                       ║
-	║                                                              ║
-	║  EXTRAS        Notify · SaveConfig · LoadConfig              ║
-	║                SetTheme · SetSize · SetFont                  ║
-	╚══════════════════════════════════════════════════════════════╝
-	--]]
+╔══════════════════════════════════════════════════════════════╗
+║  FlatGrayUI  —  Complete UI Library                          ║
+║                                                              ║
+║  SIZE SYSTEM   sm · md (default) · lg · xl                   ║
+║  FONT SUPPORT  any Enum.Font, or use built-in aliases        ║
+║                "gotham" "gothamBold" "gothamSemibold"        ║
+║                "arial"  "roboto"     "code" "serif"          ║
+║                                                              ║
+║  COMPONENTS    Toggle · Slider · Dropdown · Button · Input   ║
+║                Keybind · ColorPicker · Label · Paragraph     ║
+║                Divider                                       ║
+║                                                              ║
+║  EXTRAS        Notify · SaveConfig · LoadConfig              ║
+║                SetTheme · SetSize · SetFont                  ║
+╚══════════════════════════════════════════════════════════════╝
+--]]
 
 local UI = {}
 UI.Flags = {}
@@ -325,125 +325,17 @@ end
 
 ---------------------------------------------------------------------------
 -- CONFIG
--- Handles serialisation of all flag types:
---   boolean, number, string     → stored as-is
---   Color3                      → { __type="Color3", r, g, b }
---   Enum.KeyCode                → { __type="KeyCode", name=".Name" }
---   set-table { [key]=true }    → { __type="Set", keys={...} }
---   ordered-array table         → { __type="Array", values={...} }
 ---------------------------------------------------------------------------
-local function encodeValue(v)
-	local t = type(v)
-	if t == "boolean" or t == "number" or t == "string" then
-		return v
-	elseif t == "table" then
-		-- Detect set-table: all values are `true`
-		local isSet = true
-		local isArray = true
-		for k, val in pairs(v) do
-			if type(k) ~= "string" or val ~= true then
-				isSet = false
-			end
-			if type(k) ~= "number" then
-				isArray = false
-			end
-		end
-		if isSet and next(v) ~= nil then
-			local keys = {}
-			for k in pairs(v) do
-				keys[#keys + 1] = k
-			end
-			return { __type = "Set", keys = keys }
-		elseif isArray then
-			local vals = {}
-			for i, item in ipairs(v) do
-				vals[i] = encodeValue(item)
-			end
-			return { __type = "Array", values = vals }
-		else
-			-- Generic table — encode each value
-			local out = {}
-			for k, val in pairs(v) do
-				out[tostring(k)] = encodeValue(val)
-			end
-			return out
-		end
-	elseif t == "userdata" then
-		-- Color3
-		if typeof and typeof(v) == "Color3" then
-			return { __type = "Color3", r = v.R, g = v.G, b = v.B }
-		end
-		-- EnumItem (e.g. Enum.KeyCode.F)
-		if typeof and typeof(v) == "EnumItem" then
-			return { __type = "EnumItem", enumType = tostring(v.EnumType), name = v.Name }
-		end
-	end
-	return nil -- drop unknown types silently
-end
-
-local function decodeValue(v)
-	if type(v) ~= "table" then
-		return v
-	end
-	if v.__type == "Color3" then
-		return Color3.new(v.r or 0, v.g or 0, v.b or 0)
-	elseif v.__type == "EnumItem" then
-		local ok2, result = pcall(function()
-			return Enum[v.enumType][v.name]
-		end)
-		return ok2 and result or Enum.KeyCode.Unknown
-	elseif v.__type == "Set" then
-		local set = {}
-		for _, k in ipairs(v.keys or {}) do
-			set[k] = true
-		end
-		return set
-	elseif v.__type == "Array" then
-		local arr = {}
-		for i, item in ipairs(v.values or {}) do
-			arr[i] = decodeValue(item)
-		end
-		return arr
-	else
-		-- Generic table — decode each value recursively
-		local out = {}
-		for k, val in pairs(v) do
-			if k ~= "__type" then
-				out[k] = decodeValue(val)
-			end
-		end
-		return out
-	end
-end
-
 function UI:SaveConfig(name)
-	local encoded = {}
-	for k, v in pairs(UI.Flags) do
-		local enc = encodeValue(v)
-		if enc ~= nil then
-			encoded[k] = enc
-		end
-	end
-	local ok2, err = pcall(function()
-		writefile(name .. ".json", HS:JSONEncode(encoded))
-	end)
-	if not ok2 then
-		warn("FlatGrayUI SaveConfig failed:", err)
-	end
+	writefile(name .. ".json", HS:JSONEncode(UI.Flags))
 end
 
 function UI:LoadConfig(name)
-	local ok2, data = pcall(function()
-		if not isfile(name .. ".json") then
-			return nil
+	if isfile(name .. ".json") then
+		local d = HS:JSONDecode(readfile(name .. ".json"))
+		for k, v in pairs(d) do
+			UI.Flags[k] = v
 		end
-		return HS:JSONDecode(readfile(name .. ".json"))
-	end)
-	if not ok2 or not data then
-		return
-	end
-	for k, v in pairs(data) do
-		UI.Flags[k] = decodeValue(v)
 	end
 end
 
